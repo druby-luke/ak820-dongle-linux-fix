@@ -96,9 +96,21 @@ vendor and product ID:
 sudo grubby --update-kernel=ALL --args="usbhid.quirks=0x0c45:0xfdfd:0x00000400"   # Fedora
 ```
 
+```sh
+rpm-ostree kargs --append=usbhid.quirks=0x0c45:0xfdfd:0x00000400                 # Bazzite / Fedora Atomic
+```
+
 `0x400` is `HID_QUIRK_ALWAYS_POLL`. On distros with GRUB, add the same
 parameter to `GRUB_CMDLINE_LINUX` instead. Use either this or the service,
 not both.
+
+## Immutable distros (Bazzite, Silverblue, SteamOS)
+
+The installer only writes to `/etc` and `/usr/local`, so it works on
+read-only images without layering packages, and it survives image updates.
+On Fedora Atomic (Bazzite, Silverblue, Kinoite), `/usr/local` points to the
+writable `/var/usrlocal`. Where `/usr/local` is read-only, the installer puts
+the helper in `/etc/ak820-dongle-fix/` instead.
 
 ## Not working, or a different receiver?
 
