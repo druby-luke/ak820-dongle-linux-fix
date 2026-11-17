@@ -1,0 +1,86 @@
+#!/bin/sh
+# ak820-dongle-keepalive - keep the Ajazz AK820 Pro 2.4G receiver alive on Linux.
+#
+# The receiver (SONiX 0c45:fdfd, "2.4G Dongle") has two vendor HID interfaces
+# (usage pages 0xFF60 and 0xFF59) that no Linux program opens, so the kernel
+# never polls them. The receiver queues status reports there (e.g.
+# "55 fc 04 ...") and its radio link stalls once they go unread, typically
+# after the keyboard has slept. Windows polls every HID interface, so it never
+# happens there. Holding the hidraw node open makes usbhid poll it; the data
+# read is thrown away.
+#
+#   ak820-dongle-keepalive run /dev/hidrawN    hold one node open (used by systemd)
+#   ak820-dongle-keepalive check <usb-sysfs-dir>  exit 0 if that USB device is the receiver
+set -u
+
+VID=0c45
+PID=fdfd
+PRODUCT="2.4G Dongle"
+# First 5 bytes of the vendor interfaces' report descriptors:
+#   06 60 ff  Usage Page (Vendor 0xFF60)   09 61  Usage (0x61)
+#   06 59 ff  Usage Page (Vendor 0xFF59)   09 61  Usage (0x61)
+SIG_A=0660ff0961
+SIG_B=0659ff0961
+
+# is_target <usb device sysfs dir> - prints the reason and returns 1 on mismatch
+is_target() {
+	d=$1
+	[ "$(cat "$d/idVendor" 2>/dev/null)" = "$VID" ] || { echo "vendor id is not $VID"; return 1; }
+	[ "$(cat "$d/idProduct" 2>/dev/null)" = "$PID" ] || { echo "product id is not $PID"; return 1; }
+	[ "$(cat "$d/product" 2>/dev/null)" = "$PRODUCT" ] || { echo "product string is not '$PRODUCT'"; return 1; }
+	sigs=
+	for rd in "$d"/*:1.*/0003:*/report_descriptor; do
+		[ -r "$rd" ] || continue
+		sigs="$sigs $(od -An -tx1 -N5 "$rd" | tr -d ' \n')"
+	done
+	case $sigs in *"$SIG_A"*) ;; *) echo "no vendor interface with usage page 0xFF60"; return 1 ;; esac
+	case $sigs in *"$SIG_B"*) ;; *) echo "no vendor interface with usage page 0xFF59"; return 1 ;; esac
+	return 0
+}
+
+cmd_check() {
+	if reason=$(is_target "$1"); then
+		echo "match"
+		return 0
+	fi
+	echo "no match: $reason"
+	return 1
+}
+
+cmd_run() {
+	node=$1
+	name=${node##*/}
+	hid=$(readlink -f "/sys/class/hidraw/$name/device" 2>/dev/null) || hid=
+	[ -n "$hid" ] && [ -d "$hid" ] || { echo "$name: no sysfs entry, nothing to do"; exit 0; }
+	usb=$(readlink -f "$hid/../..")
+
+	# The receiver's interfaces are probed one by one, so the vendor ones may
+	# not exist yet when the first node appears. Give them a few seconds.
+	tries=0
+	until reason=$(is_target "$usb"); do
+		tries=$((tries + 1))
+		if [ "$tries" -ge 20 ]; then
+			echo "$name: not the AK820 Pro receiver ($reason), leaving it alone"
+			exit 0
+		fi
+		sleep 0.5
+	done
+
+	intf=${hid%/*}
+	echo "$name: holding open (interface ${intf##*/}, bcdDevice $(cat "$usb/bcdDevice" 2>/dev/null))"
+	# dd reports EIO when the receiver is unplugged; that case is logged below.
+	err=$(dd if="$node" of=/dev/null bs=64 status=none 2>&1)
+	rc=$?
+	if [ ! -e "$node" ]; then
+		echo "$name: receiver unplugged"
+		exit 0
+	fi
+	echo "$name: read stopped with status $rc: $err"
+	exit "$rc"
+}
+
+case ${1:-} in
+run) [ $# -eq 2 ] || { echo "usage: $0 run /dev/hidrawN" >&2; exit 2; }; cmd_run "$2" ;;
+check) [ $# -eq 2 ] || { echo "usage: $0 check /sys/bus/usb/devices/X-Y" >&2; exit 2; }; cmd_check "$2" ;;
+*) echo "usage: $0 run /dev/hidrawN | check <usb-sysfs-dir>" >&2; exit 2 ;;
+esac

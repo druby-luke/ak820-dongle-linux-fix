@@ -1,0 +1,33 @@
+[Unit]
+Description=Keep Ajazz AK820 Pro 2.4G receiver polled (%I)
+Documentation=https://github.com/druby-luke/ak820-dongle-linux-fix
+BindsTo=dev-%i.device
+After=dev-%i.device
+
+[Service]
+Type=simple
+ExecStart=/usr/local/libexec/ak820-dongle-fix/ak820-dongle-keepalive run /dev/%I
+Restart=no
+
+# It only needs to read one device node; everything else is locked down.
+DevicePolicy=closed
+DeviceAllow=/dev/%I r
+CapabilityBoundingSet=
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native

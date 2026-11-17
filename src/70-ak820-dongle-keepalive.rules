@@ -1,0 +1,5 @@
+# Ajazz AK820 Pro 2.4G receiver: SONiX 0c45:fdfd, product string "2.4G Dongle".
+# Starts one keepalive service per hidraw node. The service also checks the
+# vendor report descriptors before it does anything, so other receivers that
+# happen to reuse this generic SONiX ID are left alone.
+ACTION=="add", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0c45", ATTRS{idProduct}=="fdfd", ATTRS{product}=="2.4G Dongle", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ak820-dongle-keepalive@%k.service"
