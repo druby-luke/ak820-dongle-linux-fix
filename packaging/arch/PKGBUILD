@@ -1,0 +1,21 @@
+# Maintainer: Luke <11366524+druby-luke@users.noreply.github.com>
+pkgname=ak820-dongle-fix
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Keep the Ajazz AK820 Pro 2.4G receiver working after keyboard sleep"
+arch=('any')
+url="https://github.com/druby-luke/ak820-dongle-linux-fix"
+license=('MIT')
+depends=('sh' 'systemd' 'coreutils')
+makedepends=('make')
+install=ak820-dongle-fix.install
+source=("ak820-dongle-linux-fix-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+# Filled in with the GitHub tarball's checksum when published to the AUR.
+sha256sums=('SKIP')
+
+package() {
+	cd "ak820-dongle-linux-fix-$pkgver"
+	make DESTDIR="$pkgdir" LIBEXECDIR=/usr/lib/ak820-dongle-fix install
+	install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+	install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

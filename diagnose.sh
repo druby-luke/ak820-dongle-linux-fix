@@ -1,8 +1,16 @@
 #!/bin/sh
 # Show whether a plugged-in receiver is recognised and kept alive.
 # Runs without root. Paste the output when opening an issue.
-cd "$(dirname "$0")"
-CHECK=src/ak820-dongle-keepalive
+# Installed by a package as ak820-dongle-diagnose, or run from the repo.
+CHECK=
+for c in "$(dirname "$0")/src/ak820-dongle-keepalive" \
+	/usr/libexec/ak820-dongle-fix/ak820-dongle-keepalive \
+	/usr/lib/ak820-dongle-fix/ak820-dongle-keepalive \
+	/usr/local/libexec/ak820-dongle-fix/ak820-dongle-keepalive \
+	/etc/ak820-dongle-fix/ak820-dongle-keepalive; do
+	[ -f "$c" ] && { CHECK=$c; break; }
+done
+[ -n "$CHECK" ] || { echo "ak820-dongle-keepalive helper not found" >&2; exit 1; }
 
 echo "kernel: $(uname -r)"
 any=0

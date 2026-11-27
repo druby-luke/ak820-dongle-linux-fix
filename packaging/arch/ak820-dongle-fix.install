@@ -1,0 +1,26 @@
+_reload() {
+	systemctl daemon-reload >/dev/null 2>&1 || :
+	udevadm control --reload >/dev/null 2>&1 || :
+}
+
+post_install() {
+	_reload
+	/usr/lib/ak820-dongle-fix/ak820-dongle-keepalive trigger >/dev/null 2>&1 || :
+	if [ -e /etc/udev/rules.d/70-ak820-dongle-keepalive.rules ]; then
+		echo "ak820-dongle-fix: an older manual install exists in /etc; remove it with the repo's uninstall.sh"
+	fi
+}
+
+post_upgrade() {
+	_reload
+	systemctl try-restart 'ak820-dongle-keepalive@*.service' >/dev/null 2>&1 || :
+	/usr/lib/ak820-dongle-fix/ak820-dongle-keepalive trigger >/dev/null 2>&1 || :
+}
+
+pre_remove() {
+	systemctl stop 'ak820-dongle-keepalive@*.service' >/dev/null 2>&1 || :
+}
+
+post_remove() {
+	_reload
+}

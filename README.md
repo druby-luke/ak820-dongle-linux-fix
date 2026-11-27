@@ -59,6 +59,26 @@ effect is only that its interfaces get read, which Windows does anyway.
 
 ## Install
 
+### Package (recommended)
+
+Download the package for your distro from the
+[latest release](https://github.com/druby-luke/ak820-dongle-linux-fix/releases/latest):
+
+| Distro | Install |
+|---|---|
+| Fedora | `sudo dnf install ./ak820-dongle-fix-*.noarch.rpm` |
+| Ubuntu, Debian, Mint, Pop!_OS | `sudo apt install ./ak820-dongle-fix_*_all.deb` |
+| Arch, EndeavourOS, Manjaro | `sudo pacman -U ak820-dongle-fix-*-any.pkg.tar.zst` |
+
+It works straight away, including for a receiver that is already plugged in.
+Check it with `ak820-dongle-diagnose`. Remove it with your package manager.
+
+On **Bazzite and other Fedora Atomic** systems, use the script below instead.
+It needs no reboot. Layering the RPM with `rpm-ostree install` also works, but
+then the fix only becomes active after a reboot.
+
+### Script (any distro)
+
 ```sh
 git clone https://github.com/druby-luke/ak820-dongle-linux-fix
 cd ak820-dongle-linux-fix
@@ -66,8 +86,13 @@ sudo ./install.sh
 ./diagnose.sh
 ```
 
-`diagnose.sh` should show `target check: match`, and `keepalive:active` for
-every interface:
+Use either the package or the script, not both. If you installed the script
+earlier, run `sudo ./uninstall.sh` before installing the package.
+
+### Check it
+
+`diagnose.sh` (or `ak820-dongle-diagnose`) should show `target check: match`,
+and `keepalive:active` for every interface:
 
 ```
 USB 3-1.3: 0c45:fdfd "2.4G Dongle" bcdDevice 0138
@@ -82,9 +107,18 @@ Logs: `journalctl -u 'ak820-dongle-keepalive@*'`
 
 ## Uninstall
 
+Package: remove `ak820-dongle-fix` with your package manager. Script:
+
 ```sh
 sudo ./uninstall.sh
 ```
+
+## Building the packages
+
+`packaging/build.sh` builds the `.rpm`, `.deb` and Arch packages in clean
+containers (needs podman or docker) and writes them to `dist/`. Pushing a tag
+`vX.Y.Z` that matches `VERSION` makes GitHub Actions build them and attach
+them to a release.
 
 ## Alternative: kernel quirk
 

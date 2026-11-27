@@ -79,8 +79,25 @@ cmd_run() {
 	exit "$rc"
 }
 
+# Re-send udev "add" events for a receiver that is already plugged in, so the
+# rule starts its services right after install. Exit 0 if one was found.
+cmd_trigger() {
+	found=1
+	for h in /sys/class/hidraw/hidraw*; do
+		[ -e "$h" ] || continue
+		usb=$(readlink -f "$h/device/../..")
+		[ "$(cat "$usb/idVendor" 2>/dev/null):$(cat "$usb/idProduct" 2>/dev/null)" = "$VID:$PID" ] || continue
+		udevadm trigger --action=add "$h"
+		found=0
+	done
+	udevadm settle 2>/dev/null || true
+	return "$found"
+}
+
+usage="usage: $0 run /dev/hidrawN | check <usb-sysfs-dir> | trigger"
 case ${1:-} in
-run) [ $# -eq 2 ] || { echo "usage: $0 run /dev/hidrawN" >&2; exit 2; }; cmd_run "$2" ;;
-check) [ $# -eq 2 ] || { echo "usage: $0 check /sys/bus/usb/devices/X-Y" >&2; exit 2; }; cmd_check "$2" ;;
-*) echo "usage: $0 run /dev/hidrawN | check <usb-sysfs-dir>" >&2; exit 2 ;;
+run) [ $# -eq 2 ] || { echo "$usage" >&2; exit 2; }; cmd_run "$2" ;;
+check) [ $# -eq 2 ] || { echo "$usage" >&2; exit 2; }; cmd_check "$2" ;;
+trigger) cmd_trigger ;;
+*) echo "$usage" >&2; exit 2 ;;
 esac

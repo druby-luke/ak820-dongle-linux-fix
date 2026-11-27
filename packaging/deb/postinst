@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+	systemctl daemon-reload >/dev/null 2>&1 || true
+	udevadm control --reload >/dev/null 2>&1 || true
+	if [ -n "${2:-}" ]; then
+		systemctl try-restart 'ak820-dongle-keepalive@*.service' >/dev/null 2>&1 || true
+	fi
+	/usr/libexec/ak820-dongle-fix/ak820-dongle-keepalive trigger >/dev/null 2>&1 || true
+	if [ -e /etc/udev/rules.d/70-ak820-dongle-keepalive.rules ]; then
+		echo "ak820-dongle-fix: an older manual install exists in /etc; remove it with the repo's uninstall.sh"
+	fi
+fi
+exit 0

@@ -1,0 +1,13 @@
+Package: ak820-dongle-fix
+Version: @VERSION@-1
+Architecture: all
+Maintainer: Luke <11366524+druby-luke@users.noreply.github.com>
+Depends: systemd, udev
+Section: utils
+Priority: optional
+Homepage: https://github.com/druby-luke/ak820-dongle-linux-fix
+Description: Keep the Ajazz AK820 Pro 2.4G receiver working after keyboard sleep
+ The Ajazz AK820 Pro 2.4G receiver (SONiX 0c45:fdfd "2.4G Dongle") stops
+ working on Linux after the keyboard has slept, because nothing reads its
+ two vendor HID interfaces. This package adds a udev rule and a sandboxed
+ systemd service that keep those interfaces polled, the way Windows does.
